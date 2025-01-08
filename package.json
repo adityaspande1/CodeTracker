@@ -16,6 +16,10 @@
       {
         "command": "codetracker.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command":"codetracker.authenticate",
+        "title":"Github Authenticate"
       }
     ]
   },
