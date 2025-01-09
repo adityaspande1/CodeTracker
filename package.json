@@ -20,6 +20,10 @@
       {
         "command":"codetracker.authenticate",
         "title":"Github Authenticate"
+      },
+      {
+        "command":"codetracker.trackWorkspace",
+        "title":"Track Workspace"
       }
     ]
   },

@@ -43,29 +43,57 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(__webpack_require__(1));
 const githubAuth_1 = __webpack_require__(2);
+const workSpaceTracker_1 = __webpack_require__(3);
 function activate(context) {
-    console.log('Congratulations, your extension "codetracker" is now active!');
+    const outputChannel = vscode.window.createOutputChannel('CodeTracker');
+    console.log('CodeTracker extension is now active!');
+    // Register "Hello World" command
+    registerHelloWorldCommand(context);
+    // Register GitHub Authentication command
+    registerGitHubAuthCommand(context);
+    // Initialize and track workspace changes
+    initializeWorkSpaceTracking(outputChannel);
+}
+function registerHelloWorldCommand(context) {
     const disposable = vscode.commands.registerCommand('codetracker.helloWorld', () => {
-        vscode.window.showInformationMessage('Hello World from codetracker!');
+        vscode.window.showInformationMessage('Hello World from CodeTracker!');
     });
-    context.subscriptions.push(vscode.commands.registerCommand('codetracker.authenticate', async () => {
-        const response = await vscode.window.showInformationMessage('Allow CodeTracker to Authenticate with GitHub', "Yes", "No");
-        if (response === "Yes") {
+    context.subscriptions.push(disposable);
+}
+function registerGitHubAuthCommand(context) {
+    const disposable = vscode.commands.registerCommand('codetracker.authenticate', async () => {
+        const userResponse = await vscode.window.showInformationMessage('Allow CodeTracker to Authenticate with GitHub', 'Yes', 'No');
+        if (userResponse === 'Yes') {
             try {
                 const session = await (0, githubAuth_1.githubAuthenticate)();
-                console.log("session", session);
+                console.log('GitHub Session:', session);
+                vscode.window.showInformationMessage('GitHub Authentication Successful!');
             }
             catch (error) {
-                vscode.window.showErrorMessage('GitHub Authentication failed: ' + error.message);
+                vscode.window.showErrorMessage(`GitHub Authentication failed: ${error.message}`);
             }
         }
         else {
             vscode.window.showInformationMessage('Authentication canceled.');
         }
-    }));
+    });
     context.subscriptions.push(disposable);
 }
-function deactivate() { }
+function initializeWorkSpaceTracking(outputChannel) {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+        vscode.window.showInformationMessage('No workspace folders found.');
+        return;
+    }
+    const workspaceTracker = new workSpaceTracker_1.WorkSpaceTracker(outputChannel);
+    workspaceTracker.getTrackedChanges();
+    vscode.window.showInformationMessage(`Workspace folders initialized. Tracking changes for: ${workspaceFolders
+        .map(folder => folder.uri.fsPath)
+        .join(', ')}`);
+}
+function deactivate() {
+    console.log('CodeTracker extension has been deactivated.');
+}
 
 
 /***/ }),
@@ -93,6 +121,126 @@ async function githubAuthenticate() {
     return session;
 }
 
+
+/***/ }),
+/* 3 */
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.WorkSpaceTracker = void 0;
+// src/services/fileTracker.ts
+const vscode = __importStar(__webpack_require__(1));
+const events_1 = __webpack_require__(4);
+const path = __importStar(__webpack_require__(5));
+class WorkSpaceTracker extends events_1.EventEmitter {
+    watcher = null;
+    ignorePatterns = [];
+    workSpaceChanges = new Map();
+    logChannel;
+    constructor(logChannel) {
+        super();
+        this.logChannel = logChannel;
+        this.setupWatcher();
+    }
+    setupWatcher() {
+        this.logChannel.appendLine('FileTracker: Initializing file watcher...');
+        this.ignorePatterns = vscode.workspace
+            .getConfiguration('filetracker')
+            .get('ignore') || [];
+        this.watcher = vscode.workspace.createFileSystemWatcher('**/*', false, // This will include Creation
+        false, // This includes Change
+        false // Include deletion
+        );
+        this.watcher.onDidCreate((uri) => this.trackChange(uri, 'created'));
+        this.watcher.onDidChange((uri) => this.trackChange(uri, 'modified'));
+        this.watcher.onDidDelete((uri) => this.trackChange(uri, 'deleted'));
+        this.logChannel.appendLine('FileTracker: File watcher initialized.');
+    }
+    trackChange(uri, type) {
+        const relativePath = vscode.workspace.asRelativePath(uri);
+        // Check if file matches ignore patterns
+        const isIgnored = this.ignorePatterns.some((pattern) => new RegExp(pattern).test(relativePath));
+        if (isIgnored) {
+            this.logChannel.appendLine(`FileTracker: Ignored file ${relativePath}.`);
+            return;
+        }
+        const validExtensions = ['js', 'ts', 'html', 'css', 'json', 'md', 'java', 'py'];
+        const extension = path.extname(uri.fsPath).substring(1);
+        if (validExtensions.includes(extension)) {
+            const change = {
+                uri,
+                type,
+                time: new Date(),
+            };
+            this.workSpaceChanges.set(uri.fsPath, change);
+            this.emit('fileChange', change);
+            this.logChannel.appendLine(`FileTracker: ${type.toUpperCase()} detected in ${relativePath}`);
+        }
+    }
+    getTrackedChanges() {
+        return Array.from(this.workSpaceChanges.values());
+    }
+    clearChanges() {
+        this.workSpaceChanges.clear();
+        this.logChannel.appendLine('FileTracker: Cleared all tracked changes.');
+    }
+    updateIgnorePatterns(patterns) {
+        this.ignorePatterns = patterns;
+        this.logChannel.appendLine(`FileTracker: Updated ignore patterns to: ${patterns.join(', ')}`);
+    }
+    dispose() {
+        this.watcher?.dispose();
+        this.logChannel.appendLine('FileTracker: Disposed file watcher.');
+    }
+}
+exports.WorkSpaceTracker = WorkSpaceTracker;
+
+
+/***/ }),
+/* 4 */
+/***/ ((module) => {
+
+module.exports = require("events");
+
+/***/ }),
+/* 5 */
+/***/ ((module) => {
+
+module.exports = require("path");
 
 /***/ })
 /******/ 	]);
