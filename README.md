@@ -1,4 +1,4 @@
-# codetracker README
+# CodeTracker-Extension
 
 This is the README for your extension "codetracker". After writing up a brief description, we recommend including the following sections.
 
