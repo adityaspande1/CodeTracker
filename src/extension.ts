@@ -1,69 +1,44 @@
 import * as vscode from 'vscode';
-import { githubAuthenticate } from './services/githubAuth';
-import { WorkSpaceTracker } from './services/workSpaceTracker';
+import { registerGitHubAuthCommand } from './commands/githubAuthCommand';
+import { initializeWorkSpaceTracking } from './services/workSpaceTrackerService';
+import { pushLogToGitHub } from './services/pushLog'; // Import pushLogToGitHub
+import { authentication, AuthenticationSession } from 'vscode'; // For GitHub Authentication
 
 export function activate(context: vscode.ExtensionContext) {
     const outputChannel = vscode.window.createOutputChannel('CodeTracker');
     console.log('CodeTracker extension is now active!');
-
-    // Register "Hello World" command
-    registerHelloWorldCommand(context);
 
     // Register GitHub Authentication command
     registerGitHubAuthCommand(context);
 
     // Initialize and track workspace changes
     initializeWorkSpaceTracking(outputChannel);
-}
 
-function registerHelloWorldCommand(context: vscode.ExtensionContext): void {
-    const disposable = vscode.commands.registerCommand('codetracker.helloWorld', () => {
-        vscode.window.showInformationMessage('Hello World from CodeTracker!');
-    });
+    // Register the command to push logs to GitHub
+    let disposable = vscode.commands.registerCommand('codetracker.pushLogToGitHub', async () => {
+        // Authenticate with GitHub
+        const session: AuthenticationSession | undefined = await authentication.getSession('github', ['repo'], { createIfNone: true });
+        if (!session) {
+            vscode.window.showErrorMessage('GitHub authentication failed');
+            return;
+        }
 
-    context.subscriptions.push(disposable);
-}
+        // Get log content (you can modify this to get actual log content)
+        const logContent = "This is a sample log content."; // Example, replace it with actual logs if needed
 
-function registerGitHubAuthCommand(context: vscode.ExtensionContext): void {
-    const disposable = vscode.commands.registerCommand('codetracker.authenticate', async () => {
-        const userResponse = await vscode.window.showInformationMessage(
-            'Allow CodeTracker to Authenticate with GitHub',
-            'Yes',
-            'No'
-        );
+        // Get the access token from the session
+        const accessToken = session.accessToken;
 
-        if (userResponse === 'Yes') {
-            try {
-                const session = await githubAuthenticate();
-                console.log('GitHub Session:', session);
-                vscode.window.showInformationMessage('GitHub Authentication Successful!');
-            } catch (error: any) {
-                vscode.window.showErrorMessage(`GitHub Authentication failed: ${error.message}`);
-            }
-        } else {
-            vscode.window.showInformationMessage('Authentication canceled.');
+        // Push the log to GitHub
+        try {
+            await pushLogToGitHub(logContent, accessToken, session);
+        } catch (error:any) {
+            vscode.window.showErrorMessage(`Failed to push log: ${error.message}`);
         }
     });
 
+    // Add to subscriptions to ensure cleanup on deactivate
     context.subscriptions.push(disposable);
-}
-
-function initializeWorkSpaceTracking(outputChannel: vscode.OutputChannel): void {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-
-    if (!workspaceFolders || workspaceFolders.length === 0) {
-        vscode.window.showInformationMessage('No workspace folders found.');
-        return;
-    }
-
-    const workspaceTracker = new WorkSpaceTracker(outputChannel);
-    workspaceTracker.getTrackedChanges();
-
-    vscode.window.showInformationMessage(
-        `Workspace folders initialized. Tracking changes for: ${workspaceFolders
-            .map(folder => folder.uri.fsPath)
-            .join(', ')}`
-    );
 }
 
 export function deactivate(): void {
