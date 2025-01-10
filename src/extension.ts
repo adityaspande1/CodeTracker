@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { registerGitHubAuthCommand } from './commands/githubAuthCommand';
 import { initializeWorkSpaceTracking } from './services/workSpaceTrackerService';
-import { pushLogToGitHub } from './services/pushLog'; // Import pushLogToGitHub
+import {pushLogToGitHub} from './services/pushLog'
 import { authentication, AuthenticationSession } from 'vscode'; // For GitHub Authentication
 
 export function activate(context: vscode.ExtensionContext) {
