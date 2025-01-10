@@ -1,71 +1,50 @@
-# CodeTracker-Extension
+# 📋 CodeTracker - VS Code Extension
 
-This is the README for your extension "codetracker". After writing up a brief description, we recommend including the following sections.
-
-## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+Code Tracker is a Visual Studio Code extension that helps developers track their workspace activity and seamlessly push logs to GitHub. Whether you're monitoring your progress, managing logs for collaboration, or documenting changes, Code Tracker makes it easy and efficient.
 
 ---
 
-## Following extension guidelines
+## ✨ Features
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+- **Track Workspace Changes**  
+  Start tracking your workspace activity with just one click.  
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+- **Push Logs to GitHub**  
+  Automatically upload your logs to a GitHub repository for safe storage and easy sharing.  
 
-## Working with Markdown
+- **Smart Log Management**  
+  Appends new entries to the same log file for the day, ensuring comprehensive documentation without overwriting previous changes.  
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+- **Effortless Repository Handling**  
+  Automatically creates a GitHub repository for your logs if it doesn't exist.  
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+---
 
-## For more information
+## 🚀 Installation
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+1. **Install from VS Code Marketplace**:  
+   Search for `Code Tracker` in the Extensions Marketplace and click **Install**.  
 
-**Enjoy!**
+2. **Clone from GitHub**:  
+   Clone the repository and load it in VS Code as a development extension.  
+
+---
+
+## 🛠️ Usage
+
+### 1. Start Tracking
+- Open the `Code Tracker` sidebar from the Activity Bar.
+- Click the **Start Tracking** button to begin monitoring your workspace changes.
+
+### 2. Push Logs
+- After tracking, click **Push Logs** to upload the day's log file to your GitHub repository.  
+
+---
+
+## 🖼️ Example Log
+
+```txt
+Log Date: 2025-01-10
+- Modified file: src/main.ts
+- Created file: src/main.java
+- Deleted file: src/main.ts
