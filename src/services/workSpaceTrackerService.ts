@@ -9,7 +9,7 @@ export function initializeWorkSpaceTracking(outputChannel: vscode.OutputChannel)
         return;
     }
 
-    const workspaceTracker = new WorkSpaceTracker(outputChannel);
+    const workspaceTracker = WorkSpaceTracker.getInstance(outputChannel);
     workspaceTracker.getTrackedChanges();
 
     vscode.window.showInformationMessage(

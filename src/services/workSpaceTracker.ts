@@ -9,15 +9,23 @@ export interface FileChange {
 }
 
 export class WorkSpaceTracker extends EventEmitter {
+  private static instance: WorkSpaceTracker | null = null;
   private watcher: vscode.FileSystemWatcher | null = null;
   private ignorePatterns: string[] = [];
   private workSpaceChanges: Map<string, FileChange> = new Map();
   private logChannel: vscode.OutputChannel;
 
-  constructor(logChannel: vscode.OutputChannel) {
+  private constructor(logChannel: vscode.OutputChannel) {
     super();
     this.logChannel = logChannel;
     this.setupWatcher();
+  }
+
+  public static getInstance(logChannel: vscode.OutputChannel): WorkSpaceTracker {
+    if (!WorkSpaceTracker.instance) {
+      WorkSpaceTracker.instance = new WorkSpaceTracker(logChannel);
+    }
+    return WorkSpaceTracker.instance;
   }
 
   private setupWatcher(): void {
@@ -46,7 +54,6 @@ export class WorkSpaceTracker extends EventEmitter {
   private trackChange(uri: vscode.Uri, type: 'created' | 'modified' | 'deleted'): void {
     const relativePath = vscode.workspace.asRelativePath(uri);
 
-    // Check if file matches ignore patterns
     const isIgnored = this.ignorePatterns.some((pattern) =>
       new RegExp(pattern).test(relativePath)
     );
@@ -57,7 +64,10 @@ export class WorkSpaceTracker extends EventEmitter {
       return;
     }
 
-    const validExtensions = ['js', 'ts', 'html', 'css', 'json', 'md', 'java', 'py'];
+    const validExtensions = [
+      'js', 'ts', 'html', 'css', 'json', 'md', 'java', 'py', 'c', 'cpp', 
+      'jsx', 'tsx', 'go', 'kt', 'rb', 'yml', 'yaml', 'xml'
+    ];
     const extension = path.extname(uri.fsPath).substring(1);
 
     if (validExtensions.includes(extension)) {
@@ -93,6 +103,13 @@ export class WorkSpaceTracker extends EventEmitter {
       `FileTracker: Updated ignore patterns to: ${patterns.join(', ')}`
     );
     console.log(`FileTracker: Updated ignore patterns to: ${patterns.join(', ')}`);
+  }
+
+  public getTrackedChangesAsString(): string {
+    const changes = this.getTrackedChanges();
+    return changes
+      .map(change => `[${change.time.toISOString()}] ${change.type.toUpperCase()} - ${vscode.workspace.asRelativePath(change.uri)}`)
+      .join('\n');
   }
 
   public dispose(): void {

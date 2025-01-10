@@ -45,24 +45,25 @@ const vscode = __importStar(__webpack_require__(1));
 const githubAuthCommand_1 = __webpack_require__(2);
 const workSpaceTrackerService_1 = __webpack_require__(4);
 const pushLog_1 = __webpack_require__(8);
+const workSpaceTracker_1 = __webpack_require__(5);
 const vscode_1 = __webpack_require__(1); // For GitHub Authentication
 function activate(context) {
     const outputChannel = vscode.window.createOutputChannel('CodeTracker');
     console.log('CodeTracker extension is now active!');
-    // Register GitHub Authentication command
+    // Create a single instance of WorkSpaceTracker
+    // GitHub Authentication
     (0, githubAuthCommand_1.registerGitHubAuthCommand)(context);
-    // Initialize and track workspace changes
+    // Workspace tracking initialization
     (0, workSpaceTrackerService_1.initializeWorkSpaceTracking)(outputChannel);
-    // Register the command to push logs to GitHub
+    // Register the push log command
     let disposable = vscode.commands.registerCommand('codetracker.pushLogToGitHub', async () => {
-        // Authenticate with GitHub
         const session = await vscode_1.authentication.getSession('github', ['repo'], { createIfNone: true });
         if (!session) {
             vscode.window.showErrorMessage('GitHub authentication failed');
             return;
         }
-        // Get log content (you can modify this to get actual log content)
-        const logContent = "This is a sample log content."; // Example, replace it with actual logs if needed
+        // Get the tracked changes as a string
+        const logContent = workSpaceTracker_1.WorkSpaceTracker.getInstance(outputChannel).getTrackedChangesAsString();
         // Get the access token from the session
         const accessToken = session.accessToken;
         // Push the log to GitHub
@@ -73,8 +74,9 @@ function activate(context) {
             vscode.window.showErrorMessage(`Failed to push log: ${error.message}`);
         }
     });
-    // Add to subscriptions to ensure cleanup on deactivate
     context.subscriptions.push(disposable);
+    // Dispose the tracker when the extension is deactivated
+    // context.subscriptions.push({ dispose: () => workspaceTracker.dispose() });
 }
 function deactivate() {
     console.log('CodeTracker extension has been deactivated.');
@@ -218,7 +220,7 @@ function initializeWorkSpaceTracking(outputChannel) {
         vscode.window.showInformationMessage('No workspace folders found.');
         return;
     }
-    const workspaceTracker = new workSpaceTracker_1.WorkSpaceTracker(outputChannel);
+    const workspaceTracker = workSpaceTracker_1.WorkSpaceTracker.getInstance(outputChannel);
     workspaceTracker.getTrackedChanges();
     vscode.window.showInformationMessage(`Workspace folders initialized. Tracking changes for: ${workspaceFolders
         .map(folder => folder.uri.fsPath)
@@ -270,6 +272,7 @@ const vscode = __importStar(__webpack_require__(1));
 const events_1 = __webpack_require__(6);
 const path = __importStar(__webpack_require__(7));
 class WorkSpaceTracker extends events_1.EventEmitter {
+    static instance = null;
     watcher = null;
     ignorePatterns = [];
     workSpaceChanges = new Map();
@@ -278,6 +281,12 @@ class WorkSpaceTracker extends events_1.EventEmitter {
         super();
         this.logChannel = logChannel;
         this.setupWatcher();
+    }
+    static getInstance(logChannel) {
+        if (!WorkSpaceTracker.instance) {
+            WorkSpaceTracker.instance = new WorkSpaceTracker(logChannel);
+        }
+        return WorkSpaceTracker.instance;
     }
     setupWatcher() {
         this.logChannel.appendLine('FileTracker: Initializing file watcher...');
@@ -297,14 +306,16 @@ class WorkSpaceTracker extends events_1.EventEmitter {
     }
     trackChange(uri, type) {
         const relativePath = vscode.workspace.asRelativePath(uri);
-        // Check if file matches ignore patterns
         const isIgnored = this.ignorePatterns.some((pattern) => new RegExp(pattern).test(relativePath));
         if (isIgnored) {
             this.logChannel.appendLine(`FileTracker: Ignored file ${relativePath}.`);
             console.log(`FileTracker: Ignored file ${relativePath}.`);
             return;
         }
-        const validExtensions = ['js', 'ts', 'html', 'css', 'json', 'md', 'java', 'py'];
+        const validExtensions = [
+            'js', 'ts', 'html', 'css', 'json', 'md', 'java', 'py', 'c', 'cpp',
+            'jsx', 'tsx', 'go', 'kt', 'rb', 'yml', 'yaml', 'xml'
+        ];
         const extension = path.extname(uri.fsPath).substring(1);
         if (validExtensions.includes(extension)) {
             const change = {
@@ -330,6 +341,12 @@ class WorkSpaceTracker extends events_1.EventEmitter {
         this.ignorePatterns = patterns;
         this.logChannel.appendLine(`FileTracker: Updated ignore patterns to: ${patterns.join(', ')}`);
         console.log(`FileTracker: Updated ignore patterns to: ${patterns.join(', ')}`);
+    }
+    getTrackedChangesAsString() {
+        const changes = this.getTrackedChanges();
+        return changes
+            .map(change => `[${change.time.toISOString()}] ${change.type.toUpperCase()} - ${vscode.workspace.asRelativePath(change.uri)}`)
+            .join('\n');
     }
     dispose() {
         this.watcher?.dispose();
