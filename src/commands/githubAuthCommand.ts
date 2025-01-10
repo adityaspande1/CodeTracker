@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { githubAuthenticate } from '../services/githubAuth';
-
-export function registerGitHubAuthCommand(context: vscode.ExtensionContext): void {
+import { initializeWorkSpaceTracking } from '../services/workSpaceTrackerService';
+export function registerGitHubAuthCommand(context: vscode.ExtensionContext,outputChannel:vscode.OutputChannel): void {
     const disposable = vscode.commands.registerCommand('codetracker.authenticate', async () => {
         const userResponse = await vscode.window.showInformationMessage(
             'Allow CodeTracker to Authenticate with GitHub',
@@ -14,6 +14,7 @@ export function registerGitHubAuthCommand(context: vscode.ExtensionContext): voi
                 const session = await githubAuthenticate();
                 console.log('GitHub Session:', session);
                 vscode.window.showInformationMessage('GitHub Authentication Successful !');
+               
             } catch (error: any) {
                 vscode.window.showErrorMessage(`GitHub Authentication failed: ${error.message}`);
             }

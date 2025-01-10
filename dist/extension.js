@@ -42,19 +42,36 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(__webpack_require__(1));
-const githubAuthCommand_1 = __webpack_require__(2);
-const workSpaceTrackerService_1 = __webpack_require__(4);
-const pushLog_1 = __webpack_require__(8);
-const workSpaceTracker_1 = __webpack_require__(5);
+const workSpaceTrackerService_1 = __webpack_require__(2);
+const pushLog_1 = __webpack_require__(6);
+const workSpaceTracker_1 = __webpack_require__(3);
 const vscode_1 = __webpack_require__(1); // For GitHub Authentication
+const sideBar_1 = __webpack_require__(29);
+const githubAuth_1 = __webpack_require__(30);
 function activate(context) {
     const outputChannel = vscode.window.createOutputChannel('CodeTracker');
     console.log('CodeTracker extension is now active!');
-    // Create a single instance of WorkSpaceTracker
+    const webViewProvider = (0, sideBar_1.registerCodeTrackerWebViewProvider)(context, outputChannel);
     // GitHub Authentication
-    (0, githubAuthCommand_1.registerGitHubAuthCommand)(context);
+    const disposable1 = vscode.commands.registerCommand('codetracker.authenticate', async () => {
+        const userResponse = await vscode.window.showInformationMessage('Allow CodeTracker to Authenticate with GitHub', 'Yes', 'No');
+        if (userResponse === 'Yes') {
+            try {
+                const session = await (0, githubAuth_1.githubAuthenticate)();
+                console.log('GitHub Session:', session);
+                vscode.window.showInformationMessage('GitHub Authentication Successful !');
+                (0, workSpaceTrackerService_1.initializeWorkSpaceTracking)(outputChannel);
+            }
+            catch (error) {
+                vscode.window.showErrorMessage(`GitHub Authentication failed: ${error.message}`);
+            }
+        }
+        else {
+            vscode.window.showInformationMessage('Authentication canceled.');
+        }
+    });
+    context.subscriptions.push(disposable1);
     // Workspace tracking initialization
-    (0, workSpaceTrackerService_1.initializeWorkSpaceTracking)(outputChannel);
     // Register the push log command
     let disposable = vscode.commands.registerCommand('codetracker.pushLogToGitHub', async () => {
         const session = await vscode_1.authentication.getSession('github', ['repo'], { createIfNone: true });
@@ -62,7 +79,6 @@ function activate(context) {
             vscode.window.showErrorMessage('GitHub authentication failed');
             return;
         }
-        // Get the tracked changes as a string
         const logContent = workSpaceTracker_1.WorkSpaceTracker.getInstance(outputChannel).getTrackedChangesAsString();
         // Get the access token from the session
         const accessToken = session.accessToken;
@@ -128,92 +144,9 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.registerGitHubAuthCommand = registerGitHubAuthCommand;
-const vscode = __importStar(__webpack_require__(1));
-const githubAuth_1 = __webpack_require__(3);
-function registerGitHubAuthCommand(context) {
-    const disposable = vscode.commands.registerCommand('codetracker.authenticate', async () => {
-        const userResponse = await vscode.window.showInformationMessage('Allow CodeTracker to Authenticate with GitHub', 'Yes', 'No');
-        if (userResponse === 'Yes') {
-            try {
-                const session = await (0, githubAuth_1.githubAuthenticate)();
-                console.log('GitHub Session:', session);
-                vscode.window.showInformationMessage('GitHub Authentication Successful !');
-            }
-            catch (error) {
-                vscode.window.showErrorMessage(`GitHub Authentication failed: ${error.message}`);
-            }
-        }
-        else {
-            vscode.window.showInformationMessage('Authentication canceled.');
-        }
-    });
-    context.subscriptions.push(disposable);
-}
-
-
-/***/ }),
-/* 3 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.githubAuthenticate = githubAuthenticate;
-const vscode_1 = __webpack_require__(1);
-async function githubAuthenticate() {
-    const session = await vscode_1.authentication.getSession('github', ['repo'], { createIfNone: true });
-    if (!session) {
-        vscode_1.window.showErrorMessage('GitHub authentication failed');
-        return;
-    }
-    vscode_1.window.showInformationMessage('GitHub authenticated successfully with ' + session.account.label);
-    console.log('session', session);
-    return session;
-}
-
-
-/***/ }),
-/* 4 */
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.initializeWorkSpaceTracking = initializeWorkSpaceTracking;
 const vscode = __importStar(__webpack_require__(1));
-const workSpaceTracker_1 = __webpack_require__(5);
+const workSpaceTracker_1 = __webpack_require__(3);
 function initializeWorkSpaceTracking(outputChannel) {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -229,7 +162,7 @@ function initializeWorkSpaceTracking(outputChannel) {
 
 
 /***/ }),
-/* 5 */
+/* 3 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -269,8 +202,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WorkSpaceTracker = void 0;
 const vscode = __importStar(__webpack_require__(1));
-const events_1 = __webpack_require__(6);
-const path = __importStar(__webpack_require__(7));
+const events_1 = __webpack_require__(4);
+const path = __importStar(__webpack_require__(5));
 class WorkSpaceTracker extends events_1.EventEmitter {
     static instance = null;
     watcher = null;
@@ -358,19 +291,19 @@ exports.WorkSpaceTracker = WorkSpaceTracker;
 
 
 /***/ }),
-/* 6 */
+/* 4 */
 /***/ ((module) => {
 
 module.exports = require("events");
 
 /***/ }),
-/* 7 */
+/* 5 */
 /***/ ((module) => {
 
 module.exports = require("path");
 
 /***/ }),
-/* 8 */
+/* 6 */
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -409,7 +342,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.pushLogToGitHub = pushLogToGitHub;
-const rest_1 = __webpack_require__(9);
+const rest_1 = __webpack_require__(7);
 const vscode = __importStar(__webpack_require__(1));
 async function pushLogToGitHub(logContent, accessToken, session) {
     const date = new Date();
@@ -495,18 +428,18 @@ async function pushLogToGitHub(logContent, accessToken, session) {
 
 
 /***/ }),
-/* 9 */
+/* 7 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Octokit: () => (/* binding */ Octokit)
 /* harmony export */ });
-/* harmony import */ var _octokit_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(10);
-/* harmony import */ var _octokit_plugin_request_log__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(23);
-/* harmony import */ var _octokit_plugin_paginate_rest__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(25);
-/* harmony import */ var _octokit_plugin_rest_endpoint_methods__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(26);
-/* harmony import */ var _version_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(30);
+/* harmony import */ var _octokit_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
+/* harmony import */ var _octokit_plugin_request_log__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(21);
+/* harmony import */ var _octokit_plugin_paginate_rest__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(23);
+/* harmony import */ var _octokit_plugin_rest_endpoint_methods__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(24);
+/* harmony import */ var _version_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(28);
 
 
 
@@ -521,19 +454,19 @@ const Octokit = _octokit_core__WEBPACK_IMPORTED_MODULE_0__.Octokit.plugin(_octok
 
 
 /***/ }),
-/* 10 */
+/* 8 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   Octokit: () => (/* binding */ Octokit)
 /* harmony export */ });
-/* harmony import */ var universal_user_agent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
-/* harmony import */ var before_after_hook__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(12);
-/* harmony import */ var _octokit_request__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(16);
-/* harmony import */ var _octokit_graphql__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(20);
-/* harmony import */ var _octokit_auth_token__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(21);
-/* harmony import */ var _version_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(22);
+/* harmony import */ var universal_user_agent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
+/* harmony import */ var before_after_hook__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(10);
+/* harmony import */ var _octokit_request__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(14);
+/* harmony import */ var _octokit_graphql__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(18);
+/* harmony import */ var _octokit_auth_token__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(19);
+/* harmony import */ var _version_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(20);
 
 
 
@@ -669,7 +602,7 @@ class Octokit {
 
 
 /***/ }),
-/* 11 */
+/* 9 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -692,16 +625,16 @@ function getUserAgent() {
 
 
 /***/ }),
-/* 12 */
+/* 10 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _lib_register_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(13);
-/* harmony import */ var _lib_add_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
-/* harmony import */ var _lib_remove_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(15);
+/* harmony import */ var _lib_register_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
+/* harmony import */ var _lib_add_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(12);
+/* harmony import */ var _lib_remove_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(13);
 // @ts-check
 
 
@@ -750,7 +683,7 @@ function Collection() {
 
 
 /***/ }),
-/* 13 */
+/* 11 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -787,7 +720,7 @@ function register(state, name, method, options) {
 
 
 /***/ }),
-/* 14 */
+/* 12 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -843,7 +776,7 @@ function addHook(state, kind, name, hook) {
 
 
 /***/ }),
-/* 15 */
+/* 13 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -872,17 +805,17 @@ function removeHook(state, name, method) {
 
 
 /***/ }),
-/* 16 */
+/* 14 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   request: () => (/* binding */ request)
 /* harmony export */ });
-/* harmony import */ var _octokit_endpoint__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(17);
-/* harmony import */ var universal_user_agent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
-/* harmony import */ var fast_content_type_parse__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(18);
-/* harmony import */ var _octokit_request_error__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(19);
+/* harmony import */ var _octokit_endpoint__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(15);
+/* harmony import */ var universal_user_agent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
+/* harmony import */ var fast_content_type_parse__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(16);
+/* harmony import */ var _octokit_request_error__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(17);
 // pkg/dist-src/index.js
 
 
@@ -1077,14 +1010,14 @@ var request = withDefaults(_octokit_endpoint__WEBPACK_IMPORTED_MODULE_3__.endpoi
 
 
 /***/ }),
-/* 17 */
+/* 15 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   endpoint: () => (/* binding */ endpoint)
 /* harmony export */ });
-/* harmony import */ var universal_user_agent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
+/* harmony import */ var universal_user_agent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
 // pkg/dist-src/defaults.js
 
 
@@ -1432,7 +1365,7 @@ var endpoint = withDefaults(null, DEFAULTS);
 
 
 /***/ }),
-/* 18 */
+/* 16 */
 /***/ ((module) => {
 
 
@@ -1607,7 +1540,7 @@ module.exports.defaultContentType = defaultContentType
 
 
 /***/ }),
-/* 19 */
+/* 17 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1655,7 +1588,7 @@ class RequestError extends Error {
 
 
 /***/ }),
-/* 20 */
+/* 18 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1664,8 +1597,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   graphql: () => (/* binding */ graphql2),
 /* harmony export */   withCustomRequest: () => (/* binding */ withCustomRequest)
 /* harmony export */ });
-/* harmony import */ var _octokit_request__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(16);
-/* harmony import */ var universal_user_agent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(11);
+/* harmony import */ var _octokit_request__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(14);
+/* harmony import */ var universal_user_agent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
 // pkg/dist-src/index.js
 
 
@@ -1793,7 +1726,7 @@ function withCustomRequest(customRequest) {
 
 
 /***/ }),
-/* 21 */
+/* 19 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1853,7 +1786,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 
 
 /***/ }),
-/* 22 */
+/* 20 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1865,14 +1798,14 @@ const VERSION = "6.1.3";
 
 
 /***/ }),
-/* 23 */
+/* 21 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   requestLog: () => (/* binding */ requestLog)
 /* harmony export */ });
-/* harmony import */ var _version_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(24);
+/* harmony import */ var _version_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(22);
 
 function requestLog(octokit) {
   octokit.hook.wrap("request", (request, options) => {
@@ -1900,7 +1833,7 @@ requestLog.VERSION = _version_js__WEBPACK_IMPORTED_MODULE_0__.VERSION;
 
 
 /***/ }),
-/* 24 */
+/* 22 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1912,7 +1845,7 @@ const VERSION = "5.3.1";
 
 
 /***/ }),
-/* 25 */
+/* 23 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2304,7 +2237,7 @@ paginateRest.VERSION = VERSION;
 
 
 /***/ }),
-/* 26 */
+/* 24 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2312,8 +2245,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   legacyRestEndpointMethods: () => (/* binding */ legacyRestEndpointMethods),
 /* harmony export */   restEndpointMethods: () => (/* binding */ restEndpointMethods)
 /* harmony export */ });
-/* harmony import */ var _version_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(27);
-/* harmony import */ var _endpoints_to_methods_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(28);
+/* harmony import */ var _version_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(25);
+/* harmony import */ var _endpoints_to_methods_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(26);
 
 
 function restEndpointMethods(octokit) {
@@ -2336,7 +2269,7 @@ legacyRestEndpointMethods.VERSION = _version_js__WEBPACK_IMPORTED_MODULE_1__.VER
 
 
 /***/ }),
-/* 27 */
+/* 25 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -2349,14 +2282,14 @@ const VERSION = "13.3.0";
 
 
 /***/ }),
-/* 28 */
+/* 26 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   endpointsToMethods: () => (/* binding */ endpointsToMethods)
 /* harmony export */ });
-/* harmony import */ var _generated_endpoints_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(29);
+/* harmony import */ var _generated_endpoints_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(27);
 
 const endpointMethodsMap = /* @__PURE__ */ new Map();
 for (const [scope, endpoints] of Object.entries(_generated_endpoints_js__WEBPACK_IMPORTED_MODULE_0__["default"])) {
@@ -2484,7 +2417,7 @@ function decorate(octokit, scope, methodName, defaults, decorations) {
 
 
 /***/ }),
-/* 29 */
+/* 27 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4562,7 +4495,7 @@ var endpoints_default = Endpoints;
 
 
 /***/ }),
-/* 30 */
+/* 28 */
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -4571,6 +4504,115 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 const VERSION = "21.1.0";
 
+
+
+/***/ }),
+/* 29 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CodeTrackerWebViewProvider = void 0;
+exports.registerCodeTrackerWebViewProvider = registerCodeTrackerWebViewProvider;
+const vscode_1 = __webpack_require__(1);
+const githubAuth_1 = __webpack_require__(30);
+function registerCodeTrackerWebViewProvider(context, outputChannel) {
+    const provider = new CodeTrackerWebViewProvider(context.extensionUri, outputChannel);
+    context.subscriptions.push(vscode_1.window.registerWebviewViewProvider("sidebarPanel", provider));
+    return provider;
+}
+class CodeTrackerWebViewProvider {
+    _extensionUri;
+    outputChannel;
+    _view;
+    constructor(_extensionUri, outputChannel) {
+        this._extensionUri = _extensionUri;
+        this.outputChannel = outputChannel;
+    }
+    resolveWebviewView(webviewView, _context, _token) {
+        this._view = webviewView;
+        webviewView.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode_1.Uri.joinPath(this._extensionUri, "media")
+            ],
+        };
+        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        webviewView.webview.onDidReceiveMessage(async (message) => {
+            switch (message.type) {
+                case "startTracking": {
+                    await vscode_1.commands.executeCommand("codetracker.authenticate");
+                    await vscode_1.commands.executeCommand("codetracker.trackWorkspace");
+                    break;
+                }
+                case "pushLogs": {
+                    const session = await (0, githubAuth_1.githubAuthenticate)();
+                    if (session) {
+                        vscode_1.window.showInformationMessage("Pushing Logs to GitHub!");
+                        await vscode_1.commands.executeCommand("codetracker.pushLogToGitHub");
+                    }
+                    break;
+                }
+            }
+        });
+    }
+    _getHtmlForWebview(webview) {
+        const styleResetUri = webview.asWebviewUri(vscode_1.Uri.joinPath(this._extensionUri, "media", "css", "reset.css"));
+        const styleVSCodeUri = webview.asWebviewUri(vscode_1.Uri.joinPath(this._extensionUri, "media", "css", "vscode.css"));
+        const scriptUri = webview.asWebviewUri(vscode_1.Uri.joinPath(this._extensionUri, "media", "js", "sidebar.js"));
+        return `
+        <!DOCTYPE html>
+        <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <meta http-equiv="Content-Security-Policy" content="
+                default-src 'none';
+                img-src ${webview.cspSource} https:;
+                script-src 'unsafe-inline' ${webview.cspSource};
+                style-src ${webview.cspSource} 'unsafe-inline';">
+              <link href="${styleResetUri}" rel="stylesheet">
+              <link href="${styleVSCodeUri}" rel="stylesheet">
+           </head>
+           <body>
+              <div>Action buttons:</div>
+              <button type="button" class="start-btn" onclick="startTracking()">Start</button>
+              <button type="button" class="push-btn" onclick="pushLogs()">Push Logs</button>
+              <div id="tree-container"></div>
+              <script>
+                const vscode = acquireVsCodeApi();
+                function startTracking() {
+                    vscode.postMessage({ type: 'startTracking' });
+                }
+                function pushLogs() {
+                    vscode.postMessage({ type: 'pushLogs' });
+                }
+              </script>
+           </body>
+        </html>`;
+    }
+}
+exports.CodeTrackerWebViewProvider = CodeTrackerWebViewProvider;
+
+
+/***/ }),
+/* 30 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.githubAuthenticate = githubAuthenticate;
+const vscode_1 = __webpack_require__(1);
+async function githubAuthenticate() {
+    const session = await vscode_1.authentication.getSession('github', ['repo'], { createIfNone: true });
+    if (!session) {
+        vscode_1.window.showErrorMessage('GitHub authentication failed');
+        return;
+    }
+    vscode_1.window.showInformationMessage('GitHub authenticated successfully with ' + session.account.label);
+    console.log('session', session);
+    return session;
+}
 
 
 /***/ })
