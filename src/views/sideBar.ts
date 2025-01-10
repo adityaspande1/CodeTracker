@@ -99,7 +99,7 @@ export class CodeTrackerWebViewProvider implements WebviewViewProvider {
            </head>
            <body>
               <div>Action buttons:</div>
-              <button type="button" class="start-btn" onclick="startTracking()">Start</button>
+              <button type="button" class="start-btn" onclick="startTracking()">Start Tracking</button>
               <button type="button" class="push-btn" onclick="pushLogs()">Push Logs</button>
               <div id="tree-container"></div>
               <script>
