@@ -1,4 +1,4 @@
-# 📋 CodeTracker - VS Code Extension
+# 📋 WorkSpaceTracker - VS Code Extension
 
 Code Tracker is a Visual Studio Code extension that helps developers track their workspace activity and seamlessly push logs to GitHub. Whether you're monitoring your progress, managing logs for collaboration, or documenting changes, Code Tracker makes it easy and efficient.
 
