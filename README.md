@@ -23,7 +23,7 @@ WorkSpaceTracker is a Visual Studio Code extension that helps developers track t
 ## 🚀 Installation
 
 1. **Install from VS Code Marketplace**:  
-   Search for `Code Tracker` in the Extensions Marketplace and click **Install**.  
+   Search for `WorkSpaceTracker` in the Extensions Marketplace and click **Install**.  
 
 2. **Clone from GitHub**:  
    Clone the repository and load it in VS Code as a development extension.  
@@ -56,4 +56,4 @@ Log Date: 2025-01-10
 
 ---
 
-Start tracking your progress and organizing your workspace changes with **Code Tracker** today!
+Start tracking your progress and organizing your workspace changes with **WorkSpaceTracker** today!

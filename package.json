@@ -2,7 +2,7 @@
   "name": "codetracker",
   "displayName": "WorkSpace-Tracker",
   "description": "This extension tracks workspace and logs the data to github",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "icon": "media/codeTracker.jpg",
   "publisher": "AdityaPande",
   "preview": true,
