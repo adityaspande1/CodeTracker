@@ -48,7 +48,7 @@ Log Date: 2025-01-10
 - Modified file: src/main.ts
 - Created file: src/main.java
 - Deleted file: src/main.ts
-
+```
 ## 📂 GitHub Repository
 
 - A repository named `code-tracker` is automatically created in your GitHub account (if it doesn't already exist). This repository acts as a centralized location to store and manage your daily logs.
