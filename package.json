@@ -2,7 +2,7 @@
   "name": "codetracker",
   "displayName": "WorkSpace-Tracker",
   "description": "This extension tracks code ",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "icon": "media/codeTracker.jpg",
   "publisher": "AdityaPande",
   "preview": true,
