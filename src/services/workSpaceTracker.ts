@@ -43,9 +43,15 @@ export class WorkSpaceTracker extends EventEmitter {
       false // Include deletion
     );
 
-    this.watcher.onDidCreate((uri) => this.trackChange(uri, 'created'));
-    this.watcher.onDidChange((uri) => this.trackChange(uri, 'modified'));
-    this.watcher.onDidDelete((uri) => this.trackChange(uri, 'deleted'));
+    this.watcher.onDidCreate((uri) => {this.trackChange(uri, 'created');
+      console.log(`🟢 File Created: ${uri.fsPath}`);
+    });
+    this.watcher.onDidChange((uri) => {this.trackChange(uri, 'modified')
+      console.log(`🟡 File Modified: ${uri.fsPath}`);
+    });
+    this.watcher.onDidDelete((uri) =>{ this.trackChange(uri, 'deleted')
+      console.log(`🔴 File Deleted: ${uri.fsPath}`);
+    });
 
     this.logChannel.appendLine('FileTracker: File watcher initialized.');
     console.log('FileTracker: File watcher initialized.');
@@ -66,7 +72,7 @@ export class WorkSpaceTracker extends EventEmitter {
 
     const validExtensions = [
       'js', 'ts', 'html', 'css', 'json', 'md', 'java', 'py', 'c', 'cpp', 
-      'jsx', 'tsx', 'go', 'kt', 'rb', 'yml', 'yaml', 'xml'
+      'jsx', 'tsx', 'go', 'kt', 'rb', 'yml', 'yaml', 'xml','txt'
     ];
     const extension = path.extname(uri.fsPath).substring(1);
 
@@ -88,6 +94,7 @@ export class WorkSpaceTracker extends EventEmitter {
   }
 
   public getTrackedChanges(): FileChange[] {
+    
     return Array.from(this.workSpaceChanges.values());
   }
 

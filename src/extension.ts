@@ -11,28 +11,42 @@ export function activate(context: vscode.ExtensionContext) {
     console.log('CodeTracker extension is now active!');
 
     const webViewProvider = registerCodeTrackerWebViewProvider(context, outputChannel);
-    
+
+    const storageKey='githubAuthenticated';
+    const isAuthenticated= context.globalState.get<boolean>(storageKey,false);
 
 
    const disposable1 = vscode.commands.registerCommand('codetracker.authenticate', async () => {
-           const userResponse = await vscode.window.showInformationMessage(
-               'Allow CodeTracker to Authenticate with GitHub',
-               'Yes',
-               'No'
-           );
-   
-           if (userResponse === 'Yes') {
-               try {
-                   const session = await githubAuthenticate();
-                   console.log('GitHub Session:', session);
-                   vscode.window.showInformationMessage('GitHub Authentication Successful !');
-                   initializeWorkSpaceTracking(outputChannel);
-               } catch (error: any) {
-                   vscode.window.showErrorMessage(`GitHub Authentication failed: ${error.message}`);
-               }
-           } else {
-               vscode.window.showInformationMessage('Authentication canceled.');
-           }
+
+        if(!isAuthenticated){
+            const userResponse = await vscode.window.showInformationMessage(
+                'Allow WorkSpace-Tracker to Authenticate with GitHub',
+                'Yes',
+                'No'
+            );
+    
+            if (userResponse === 'Yes') {
+                try {
+                    const session = await githubAuthenticate();
+                    console.log('GitHub Session:', session);
+                    vscode.window.showInformationMessage('GitHub Authentication Successful !');
+                    initializeWorkSpaceTracking(outputChannel);
+                    context.globalState.update(storageKey,true);
+                } catch (error: any) {
+                    vscode.window.showErrorMessage(`GitHub Authentication failed: ${error.message}`);
+                }
+            } else {
+                vscode.window.showInformationMessage('Authentication canceled.');
+            }
+       
+        }else{
+            console.log('User is already authenticated');
+            vscode.window.showInformationMessage('User is already authenticated');
+            initializeWorkSpaceTracking(outputChannel);
+        
+        }
+        
+           
        });
    
        context.subscriptions.push(disposable1);
@@ -47,10 +61,11 @@ export function activate(context: vscode.ExtensionContext) {
 
       
        const logContent=WorkSpaceTracker.getInstance(outputChannel).getTrackedChangesAsString();
-       
+        console.log('Log Content:', logContent);    
         const accessToken = session.accessToken;
         try {
             await pushLogToGitHub(logContent, accessToken, session);
+            
         } catch (error: any) {
             vscode.window.showErrorMessage(`Failed to push log: ${error.message}`);
         }
